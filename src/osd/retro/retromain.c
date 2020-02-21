@@ -1683,12 +1683,9 @@ static void unpackSamples(const struct retro_game_info *game)
   retro_log(RETRO_LOG_INFO, "Searching zip content for samples for file %s\n", path_basename(game->path));
   
   zip_file* zipContent = NULL;
-  //zip_file** zipContentRef = NULL;
 
   if (zip_file_open(game->path, &zipContent) == ZIPERR_NONE && zipContent)
-  {
-     //zipContent = *zipContentRef;
-  
+  {  
      retro_log(RETRO_LOG_INFO, "Zip file open.  Iterating content\n");
      const zip_file_header* entry = zip_file_first_file(zipContent);
      
