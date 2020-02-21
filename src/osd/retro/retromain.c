@@ -6,6 +6,7 @@ mame2010 - libretro port of mame 0.139
 #include <unistd.h>
 #include <stdint.h>
 #include "osdepend.h"
+#include "unzip.h"
 
 #include "emu.h"
 #include "clifront.h"
@@ -127,6 +128,7 @@ static int FirstTimeUpdate = 1;
 
 bool retro_load_ok  = false;
 int pauseg = 0;
+const char* SAMPLES = "samples/";
 
 
 /*********************************************
@@ -135,6 +137,9 @@ int pauseg = 0;
 
 static void check_variables(void);
 static void initInput(running_machine* machine);
+static bool strStartsWith(const char *search, const char *str);
+static bool strEndsWith(char const* suffix, const char* str);
+static void unpackSamples(const struct retro_game_info *game);
 
 /*********************************************/
 
@@ -164,24 +169,24 @@ void retro_init (void)
     if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log_cb))
         retro_log = log_cb.log;
     	
-   const char *system_dir  = NULL;
-   const char *save_dir    = NULL;
+   const char *system_dir  = "/tmp";
+   const char *save_dir    = "/tmp";
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_dir) && system_dir)
-   {
+   //if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_dir) && system_dir)
+   //{
        // use a subfolder in the system directory with the core name (ie mame2010)
         snprintf(libretro_system_directory, sizeof(libretro_system_directory), "%s%s%s", system_dir, path_default_slash(), core_name);
-   }
+   //}
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &save_dir) && save_dir)
-   {
+   //if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &save_dir) && save_dir)
+   //{
        // use a subfolder in the save directory with the core name (ie mame2010)
         snprintf(libretro_save_directory, sizeof(libretro_save_directory), "%s%s%s", save_dir, path_default_slash(), core_name);
-   }
-   else
-   {
-        *libretro_save_directory = *libretro_system_directory;
-   }
+   //}
+   //else
+   //{
+   //     *libretro_save_directory = *libretro_system_directory;
+   //}
    
     path_mkdir(libretro_system_directory);
     path_mkdir(libretro_save_directory);
@@ -250,6 +255,8 @@ bool retro_load_game(const struct retro_game_info *info)
    retro_log(RETRO_LOG_INFO, "[MAME 2010] libretro_content_directory: %s\n", libretro_content_directory);  
    retro_log(RETRO_LOG_INFO, "[MAME 2010] libretro_system_directory: %s\n", libretro_system_directory);
    retro_log(RETRO_LOG_INFO, "[MAME 2010] libretro_save directory: %s\n", libretro_save_directory); 
+   
+   unpackSamples(info);
    
 #if 0
    struct retro_keyboard_callback cb = { keyboard_cb };
@@ -1648,6 +1655,87 @@ int executeGame(char* path) {
 	xargv[paramCount - 2] = NULL;
 
 	return result;
+}
+
+static bool strStartsWith(const char *search, const char *str)
+{
+  return strncmp(search, str, strlen(search)) == 0;
+}
+
+static bool strEndsWith(char const* suffix, const char* str)
+{
+  if (!str && !suffix)
+     return true;
+     
+  if (!str || !suffix)
+     return false;
+  
+  int lenstr = strlen(str);
+  int lensuf = strlen(suffix);
+  
+  return strcmp(str + lenstr - lensuf, suffix) == 0;
+  
+}
+
+static void unpackSamples(const struct retro_game_info *game)
+{
+    /* Seach the zip for samples */
+  retro_log(RETRO_LOG_INFO, "Searching zip content for samples for file %s\n", path_basename(game->path));
+  
+  zip_file* zipContent = NULL;
+  //zip_file** zipContentRef = NULL;
+
+  if (zip_file_open(game->path, &zipContent) == ZIPERR_NONE && zipContent)
+  {
+     //zipContent = *zipContentRef;
+  
+     retro_log(RETRO_LOG_INFO, "Zip file open.  Iterating content\n");
+     const zip_file_header* entry = zip_file_first_file(zipContent);
+     
+     if (entry)
+     {
+	     do
+	     {
+	        retro_log(RETRO_LOG_INFO, "Zip entry name %s\n", entry->filename);
+	        if (strStartsWith(SAMPLES, entry->filename) && strEndsWith(".zip", entry->filename))
+	        {
+	           retro_log(RETRO_LOG_INFO, "Found content file.\n");
+	           /*
+	            * Create a buffer and copy the file contents to the buffer 
+	           */ 
+	           void* fileBuf = malloc(entry->uncompressed_length);
+	           
+	           if (fileBuf && zip_file_decompress(zipContent, fileBuf, entry->uncompressed_length) == ZIPERR_NONE)
+	           {
+	              char baseSamplePath[PATH_MAX + 1];
+	              char fullSamplePath[PATH_MAX + 1];
+	
+	              snprintf(baseSamplePath, PATH_MAX, "%s%s%s", libretro_system_directory, path_default_slash(), "samples/");
+	              snprintf(fullSamplePath, PATH_MAX, "%s%s", baseSamplePath, path_basename(entry->filename));
+	
+	              FILE* pFile = fopen(fullSamplePath, "wb");
+	              if (pFile)
+	              {
+	                 retro_log(RETRO_LOG_INFO, "Writing file content to %s.\n", fullSamplePath);
+	                 fwrite(fileBuf, sizeof(char), entry->uncompressed_length, pFile);
+	                 fclose(pFile);
+	              }
+	              else
+	              {
+	                  retro_log(RETRO_LOG_ERROR, "Error writing file content to %s.\n", fullSamplePath);
+	              }
+	           } 
+	           
+	           if (fileBuf)
+	              free(fileBuf);
+	           
+	           break;
+	        }
+	     } while (entry = zip_file_next_file(zipContent));
+     }
+     zip_file_close(zipContent);
+  }
+
 }
 
 //============================================================
