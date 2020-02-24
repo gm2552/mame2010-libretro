@@ -170,7 +170,7 @@ void retro_init (void)
         retro_log = log_cb.log;
     	
    const char *system_dir  = "/tmp";
-   const char *save_dir    = "/tmp";
+   const char *save_dir    = "/userdata";
 
    //if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_dir) && system_dir)
    //{
