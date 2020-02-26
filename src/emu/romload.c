@@ -1020,13 +1020,13 @@ chd_error open_disk_image_options(core_options *options, const game_driver *game
 	for (searchdrv = gamedrv; searchdrv != NULL && filerr != FILERR_NONE; searchdrv = driver_get_clone(searchdrv))
 	{
 		astring fname(searchdrv->name, PATH_SEPARATOR, ROM_GETNAME(romp), ".chd");
-		filerr = mame_fopen_options(options, libretro_content_directory, fname, OPEN_FLAG_READ, image_file);
+		filerr = mame_fopen_options(options, "/tmp", fname, OPEN_FLAG_READ, image_file);
 	}
 
 	if (filerr != FILERR_NONE)
 	{
 		astring fname(ROM_GETNAME(romp), ".chd");
-		filerr = mame_fopen_options(options, libretro_content_directory, fname, OPEN_FLAG_READ, image_file);
+		filerr = mame_fopen_options(options, "/tmp", fname, OPEN_FLAG_READ, image_file);
 	}
 
 	/* did the file open succeed? */

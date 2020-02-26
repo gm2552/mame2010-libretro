@@ -129,7 +129,7 @@ static int FirstTimeUpdate = 1;
 bool retro_load_ok  = false;
 int pauseg = 0;
 const char* SAMPLES = "samples/";
-
+const char* NVRAM = "nvram/";
 
 /*********************************************
    LOCAL FUNCTION PROTOTYPES
@@ -140,6 +140,7 @@ static void initInput(running_machine* machine);
 static bool strStartsWith(const char *search, const char *str);
 static bool strEndsWith(char const* suffix, const char* str);
 static void unpackSamples(const struct retro_game_info *game);
+static void unpackNVRAM(const struct retro_game_info *game);
 
 /*********************************************/
 
@@ -257,6 +258,7 @@ bool retro_load_game(const struct retro_game_info *info)
    retro_log(RETRO_LOG_INFO, "[MAME 2010] libretro_save directory: %s\n", libretro_save_directory); 
    
    unpackSamples(info);
+   unpackNVRAM(info);
    
 #if 0
    struct retro_keyboard_callback cb = { keyboard_cb };
@@ -1734,6 +1736,65 @@ static void unpackSamples(const struct retro_game_info *game)
   }
 
 }
+
+static void unpackNVRAM(const struct retro_game_info *game)
+{
+    /* Seach the zip for NVRAM files */
+  retro_log(RETRO_LOG_INFO, "Searching zip content for nvram for file %s\n", path_basename(game->path));
+  
+  zip_file* zipContent = NULL;
+
+  if (zip_file_open(game->path, &zipContent) == ZIPERR_NONE && zipContent)
+  {  
+     retro_log(RETRO_LOG_INFO, "Zip file open.  Iterating content\n");
+     const zip_file_header* entry = zip_file_first_file(zipContent);
+     
+     if (entry)
+     {
+	     do
+	     {
+	        retro_log(RETRO_LOG_INFO, "Zip entry name %s\n", entry->filename);
+	        if (strStartsWith(NVRAM, entry->filename) && strEndsWith(".nv", entry->filename))
+	        {
+	           retro_log(RETRO_LOG_INFO, "Found nvram file.\n");
+	           /*
+	            * Create a buffer and copy the file contents to the buffer 
+	           */ 
+	           void* fileBuf = malloc(entry->uncompressed_length);
+	           
+	           if (fileBuf && zip_file_decompress(zipContent, fileBuf, entry->uncompressed_length) == ZIPERR_NONE)
+	           {
+	              char baseSamplePath[PATH_MAX + 1];
+	              char fullSamplePath[PATH_MAX + 1];
+	
+	              snprintf(baseSamplePath, PATH_MAX, "%s%s%s", libretro_save_directory, path_default_slash(), "nvram/");
+	              snprintf(fullSamplePath, PATH_MAX, "%s%s", baseSamplePath, path_basename(entry->filename));
+	
+	              FILE* pFile = fopen(fullSamplePath, "wb");
+	              if (pFile)
+	              {
+	                 retro_log(RETRO_LOG_INFO, "Writing nvram content to %s.\n", fullSamplePath);
+	                 fwrite(fileBuf, sizeof(char), entry->uncompressed_length, pFile);
+	                 fclose(pFile);
+	              }
+	              else
+	              {
+	                  retro_log(RETRO_LOG_ERROR, "Error writing nvram to %s.\n", fullSamplePath);
+	              }
+	           } 
+	           
+	           if (fileBuf)
+	              free(fileBuf);
+	           
+	           break;
+	        }
+	     } while (entry = zip_file_next_file(zipContent));
+     }
+     zip_file_close(zipContent);
+  }
+
+}
+
 
 //============================================================
 //  mmain
