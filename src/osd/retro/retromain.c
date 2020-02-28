@@ -5,6 +5,11 @@ mame2010 - libretro port of mame 0.139
 
 #include <unistd.h>
 #include <stdint.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
 #include "osdepend.h"
 #include "unzip.h"
 
@@ -53,6 +58,7 @@ char image_directory[1024];
 char diff_directory[1024];
 char hiscore_directory[1024];
 char comment_directory[1024];
+char localCHDFile[1024];
 
 int mame_reset = -1;
 static int ui_ipt_pushchar=-1;
@@ -130,6 +136,7 @@ bool retro_load_ok  = false;
 int pauseg = 0;
 const char* SAMPLES = "samples/";
 const char* NVRAM = "nvram/";
+const char* CHD = "chd/";
 
 /*********************************************
    LOCAL FUNCTION PROTOTYPES
@@ -141,6 +148,7 @@ static bool strStartsWith(const char *search, const char *str);
 static bool strEndsWith(char const* suffix, const char* str);
 static void unpackSamples(const struct retro_game_info *game);
 static void unpackNVRAM(const struct retro_game_info *game);
+static void unpackCHDs(const struct retro_game_info *game);
 
 /*********************************************/
 
@@ -259,6 +267,7 @@ bool retro_load_game(const struct retro_game_info *info)
    
    unpackSamples(info);
    unpackNVRAM(info);
+   unpackCHDs(info);
    
 #if 0
    struct retro_keyboard_callback cb = { keyboard_cb };
@@ -325,6 +334,9 @@ void osd_exit(running_machine &machine)
    global_free(P2_device);
    global_free(retrokbd_device);
    global_free(mouse_device);
+   
+   if (localCHDFile[0])
+      remove(localCHDFile);
 }
 
 void osd_init(running_machine* machine)
@@ -1683,7 +1695,6 @@ static void unpackSamples(const struct retro_game_info *game)
 {
     /* Seach the zip for samples */
   retro_log(RETRO_LOG_INFO, "Searching zip content for samples for file %s\n", path_basename(game->path));
-  
   zip_file* zipContent = NULL;
 
   if (zip_file_open(game->path, &zipContent) == ZIPERR_NONE && zipContent)
@@ -1795,6 +1806,79 @@ static void unpackNVRAM(const struct retro_game_info *game)
 
 }
 
+static void unpackCHDs(const struct retro_game_info *game)
+{
+  memset(localCHDFile, 0, sizeof(localCHDFile));
+
+    /* Seach the zip for CHD files */
+  retro_log(RETRO_LOG_INFO, "Searching zip content for CHD for file %s\n", path_basename(game->path));
+  
+  zip_file* zipContent = NULL;
+
+  if (zip_file_open(game->path, &zipContent) == ZIPERR_NONE && zipContent)
+  {  
+     retro_log(RETRO_LOG_INFO, "Zip file open.  Iterating content\n");
+     const zip_file_header* entry = zip_file_first_file(zipContent);
+     
+     if (entry)
+     {
+	     do
+	     {
+	        retro_log(RETRO_LOG_INFO, "Zip entry name %s\n", entry->filename);
+	        if (strStartsWith(CHD, entry->filename) && strEndsWith(".chd", entry->filename))
+	        {
+	           retro_log(RETRO_LOG_INFO, "Found chd file.\n");
+	           /*
+	            * Map a file and copy the unzipped contents to the file 
+	           */ 
+	           
+	           char baseSamplePath[PATH_MAX + 1];
+	           char fullSamplePath[PATH_MAX + 1];
+	           
+	           snprintf(baseSamplePath, PATH_MAX, "%s", "/tmp/");
+	           snprintf(fullSamplePath, PATH_MAX, "%s%s", baseSamplePath, path_basename(entry->filename));
+
+	           int fd = open(fullSamplePath, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+	           if (fd != -1)
+	           {
+	               snprintf(localCHDFile, 1024, "%s", fullSamplePath);
+	           
+		           if (lseek(fd, (entry->uncompressed_length - 1), SEEK_SET) != -1)
+	               {
+		               write(fd, "", 1);
+			           
+			           retro_log(RETRO_LOG_INFO, "Mapping CHD file to memory.\n");
+			           void* fileBuf =  mmap((caddr_t)0, entry->uncompressed_length, PROT_WRITE|PROT_READ, MAP_SHARED, fd, (off_t)0);
+			           
+			           if (fileBuf != (caddr_t)(-1))
+			           {
+			              retro_log(RETRO_LOG_INFO, "Writing CHD content to %s.\n", fullSamplePath);
+		                  if (zip_file_decompress(zipContent, fileBuf, entry->uncompressed_length) == ZIPERR_NONE)
+		                  {
+		                     retro_log(RETRO_LOG_ERROR, "Error writing CHD to %s.\n", fullSamplePath);
+		                  }
+		                 
+		                  munmap(fileBuf, entry->uncompressed_length);
+			           } 
+		               else
+		                  retro_log(RETRO_LOG_ERROR, "Failed map file to memory for CHD.\n");
+		           }
+		           else
+		               retro_log(RETRO_LOG_ERROR, "Failed to expand CHD target file size.\n");	
+		               
+	               close(fd);
+	               break;
+	           }
+	           else
+	               retro_log(RETRO_LOG_ERROR, "Failed to create target CHD file.\n");
+	               
+	           break;
+	        }
+	     } while (entry = zip_file_next_file(zipContent));
+     }
+     zip_file_close(zipContent);
+  }
+}
 
 //============================================================
 //  mmain
