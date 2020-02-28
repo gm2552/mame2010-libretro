@@ -1,5 +1,8 @@
 # mame2010 - AtGames Legends Ultimate Mod
 
+Current release is v1.0.0.  It can be downloaded from [here](https://github.com/gm2552/mame2010-libretro/releases/download/1.0.0/mame2010_libretro_alu_1.0.0.zip).
+
+## Acknowledgements 
 Port of MAME 0.139 for libretro, originally sourced from https://github.com/mamedev/mame/releases/download/mame0139/mame0139s.zip
 
 Includes mods specific to the AtGames Legends Ultimate gaming console.  Forked from original source found at https://github.com/libretro/mame2010-libretro
