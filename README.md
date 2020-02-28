@@ -1,70 +1,59 @@
-# mame2010
+# mame2010 - AtGames Legends Ultimate Mod
 
 Port of MAME 0.139 for libretro, originally sourced from https://github.com/mamedev/mame/releases/download/mame0139/mame0139s.zip
 
-The OSD code is highly inspired by other MAME ports :
- 
-- mame2003 : https://github.com/libretro/mame2003-libretro
-- ps3 mame0.125 port     : http://www.volny.cz/molej/ps3/mame_ps3.htm
-- mame4droid             : http://code.google.com/p/imame4all/source/browse/
+Includes mods specific to the AtGames Legends Ultimate gaming console.  Original source is found at https://github.com/libretro/mame2010-libretro
 
-## Directories
+## Mods
 
-mame2010 requires that the following directories exist, and will create them if they are missing.
+### Config Saves
 
-libretro system subfolders:
+Games settings which include controler configured, high scores, and nvram files are persisted into the consoles /userdata/mame2010 folder.  These settings will persist between power cycling the console.
 
-- libretro system folder/mame2010/ - `cheat.zip` cheats file - not currently working
-- libretro system folder/mame2010/artwork
-- libretro system folder/mame2010/crosshairs
-- libretro system folder/mame2010/fonts
-- libretro system folder/mame2010/samples
+### Samples Support
 
-libretro saves subfolders
-- libretro saves folder/mame2010/cfg
-- libretro saves folder/mame2010/comment
-- libretro saves folder/mame2010/ctrlr
-- libretro saves folder/mame2010/ini
-- libretro saves folder/mame2010/input
-- libretro saves folder/mame2010/memcard
-- libretro saves folder/mame2010/nvram
+Samples are supported by adding a game's samples zip file into the ROM Zip in a folder named `samples` (the directory name is case sensitive).  For example, take the game Zaxxon whose ROM Zip file name is `zaxxon.zip` and whose samples file name is also named `zaxxon.zip` (typically samples zip files have the same name as the ROM Zip).  In ROM zip file, you would create a new folder named samples and add the samples `zaxxon.zip` to that folder.  Below is an example of the contents of the ROM Zip:
 
+```
+Zaxxon.zip
+   - zaxxon.1
+   - zaxxon.2
+   .
+   .
+   .
+   - zaxxon.u98
+   - samples
+     - zaxxon.zip
+```
 
-## Default Player 1 and 2 Controls: 
+### Prebuilt NVRAM Support
 
-	RETRO_DEVICE_ID_JOYPAD_START        MAME: KEY_START
-	RETRO_DEVICE_ID_JOYPAD_SELECT       MAME: KEY_COIN
-	RETRO_DEVICE_ID_JOYPAD_A            MAME: KEY_BUTTON_1
-	RETRO_DEVICE_ID_JOYPAD_B            MAME: KEY_BUTTON_2
-	RETRO_DEVICE_ID_JOYPAD_X            MAME: KEY_BUTTON_3
-	RETRO_DEVICE_ID_JOYPAD_Y            MAME: KEY_BUTTON_4
-	RETRO_DEVICE_ID_JOYPAD_L            MAME: KEY_BUTTON_5
-	RETRO_DEVICE_ID_JOYPAD_R            MAME: KEY_BUTTON_6
-	RETRO_DEVICE_ID_JOYPAD_L2           MAME: KEY_BUTTON_7
-	RETRO_DEVICE_ID_JOYPAD_UP           MAME: KEY_JOYSTICK_U
-	RETRO_DEVICE_ID_JOYPAD_DOWN         MAME: KEY_JOYSTICK_D
-	RETRO_DEVICE_ID_JOYPAD_LEFT         MAME: KEY_JOYSTICK_L
-	RETRO_DEVICE_ID_JOYPAD_RIGHT        MAME: KEY_JOYSTICK_R
-	RETRO_DEVICE_ID_JOYPAD_R2           Turbo Button
+Generally games create and modify .nv (nvram) files as needed without issue.  However some games require special sequences to initial these files correctly.  For example, running Simpsons Bowling creates nv file, but a user must go through a series of save states and game resets (the F2 and F3 sequense) to properlly initialize the file so the game loads successfully.  Executing these types of sequense may be very difficult if not impossibly on the Legends console.  However, if you have created a working .nv file using an emulator like Mame or advmame, you can add that .nv file to the ROM zip and have the core explicitly use that .nv file (as opposed to the core creating a new .nv file from scratch).
 
-## Default Player 3 and 4 Controls: 
+Similar to adding samples to the ROM zip, custom .nv files are added to the ROM Zip in a folder named `nvram` (case sensitive).  Using the Simpsons Bolwing example above, you would add the pre-created simpbowl.nv file to the ROM zip into the `nvram` folder.  Below is an example of the ROM Zip layout:
 
-	RETRO_DEVICE_ID_JOYPAD_START        MAME: KEY_START
-	RETRO_DEVICE_ID_JOYPAD_SELECT       MAME: KEY_COIN
-	RETRO_DEVICE_ID_JOYPAD_A            MAME: KEY_BUTTON_1
-	RETRO_DEVICE_ID_JOYPAD_B            MAME: KEY_BUTTON_2
-	RETRO_DEVICE_ID_JOYPAD_X            MAME: KEY_BUTTON_3
-	RETRO_DEVICE_ID_JOYPAD_UP           MAME: KEY_JOYSTICK_U
-	RETRO_DEVICE_ID_JOYPAD_DOWN         MAME: KEY_JOYSTICK_D
-	RETRO_DEVICE_ID_JOYPAD_LEFT         MAME: KEY_JOYSTICK_L
-	RETRO_DEVICE_ID_JOYPAD_RIGHT        MAME: KEY_JOYSTICK_R
-	RETRO_DEVICE_ID_JOYPAD_R2           Turbo Button
-    
-## Native MAME UI Controls:
+```
+simpbowl.zip
+   - 999a01.73
+   - simpbowl.25c
+   - zaxxon.u98
+   - nvram
+     - simpbowl.nv
+```
 
-_Note: these controls are only operational for Player 1_
+### CHD Support
 
-	RETRO_DEVICE_ID_JOYPAD_L3           Test/Service Mode
-    RETRO_DEVICE_ID_JOYPAD_R3           Enter MAME UI
-	RETRO_DEVICE_ID_JOYPAD_A            MAME: IPT_UI_SELECT (Make selections in the MAME GUI)
-      
+Some games required an external image file that contains required content for the game to load and run.  CHD files are supported similarly to samples by placing the game's chd file into the ROM Zip in a folder named `chd` (case sensitive).  The core extracts the CHD file and places it into the console /tmp folder and the core loads the CHD content from that directory.  
+
+*NOTE:* CHD files can be very large (sometimes 1 or many gigabytes).  There is limited storage on the console, so it very possible that games with CHD files larger that a couple of hundred megabytes may not load due to insufficient storage.  To be a good neighbor, the core deletes the CHD file from the /tmp directory when a game exists.  Below is an example of the ROM Zip layout of the Simpsons Bowling game using an embedded CHD file:
+
+```
+simpbowl.zip
+   - 999a01.73
+   - simpbowl.25c
+   - zaxxon.u98
+   - nvram
+     - simpbowl.nv
+   - chd
+     - simpbowl.chd
+```
