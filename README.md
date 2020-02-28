@@ -2,13 +2,13 @@
 
 Port of MAME 0.139 for libretro, originally sourced from https://github.com/mamedev/mame/releases/download/mame0139/mame0139s.zip
 
-Includes mods specific to the AtGames Legends Ultimate gaming console.  Original source is found at https://github.com/libretro/mame2010-libretro
+Includes mods specific to the AtGames Legends Ultimate gaming console.  Forked from original source found at https://github.com/libretro/mame2010-libretro
 
 ## Rationale
 
 Generally speaking, the goals of this modified core can certainly be accomplished by other means (however, some cannot).  The ALU (AtGame Ultimate Legends) machine packages games using the squashfs format with and extension of .UCE.  Inside that UCE are resources required to launch the emulator and load those resources.  The emulator is launched via an exec script, and that script can be modified to do almost anything you would like.  However, most users generating UCE files do not have tooling (or know how to use tools) to modify the finer details of the UCE.
 
-The philosophy of this core is to use the ROM Zip as a universal packaging medium that contains all the resources and logic to load the required resources of a game.  You could just as easily package these resources in other locations in the UCE and use the exec script to relocate them appropriately, but again most users do not have the necessary skill set to build such a custom UCE.  Using the ROM Zip as the packager, a modified ROM Zip can be created using somewhat intuitive tooling that is available on almost any platform such as WinZip, WinRar, and P7Zip.  This allows generally available tooling like the AtGame AddOn Tool to still be used to build the UCE without custimation to the UCE packaging tool.
+The philosophy of this core is to use the ROM Zip as a universal packaging medium that contains all the resources and logic to load the required resources of a game.  You could just as easily package these resources in other locations in the UCE and use the exec script to relocate them appropriately, but again most users do not have the necessary skill set to build such a custom UCE.  Using the ROM Zip as the packager, a modified ROM Zip can be created using somewhat intuitive tooling that is available on almost any platform such as WinZip, WinRar, and P7Zip.  This allows generally available tooling like the [AtGame AddOn Tool](https://github.com/FalkensMaze1983/ultimate_addon/tree/master/AddOn_tool) to still be used to build the UCE without custimation to the UCE packaging tool.
 
 ## ROM Zips
 
