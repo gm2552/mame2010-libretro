@@ -10,6 +10,12 @@ Generally speaking, the goals of this modified core can certainly be accomplishe
 
 The philosophy of this core is to use the ROM Zip as a universal packaging medium that contains all the resources and logic to load the required resources of a game.  You could just as easily package these resources in other locations in the UCE and use the exec script to relocate them appropriately, but again most users do not have the necessary skill set to build such a custom UCE.  Using the ROM Zip as the packager, a modified ROM Zip can be created using somewhat intuitive tooling that is available on almost any platform such as WinZip, WinRar, and P7Zip.  This allows generally available tooling like the AtGame AddOn Tool to still be used to build the UCE without custimation to the UCE packaging tool.
 
+## ROM Zips
+
+ROM zips are defined here as the zip files that contain the necessary ROM image files to run a game.  If you have ever used MAME, you are probably VERY familiar with ROM sets and the ZIP files in those set used to lanch games.  Those zips files are the ROM Zips.  ROM zips should not be confused with other zip files used in MAME that may the same name as the ROM Zips.  Examples are the `samples` zip files that generally hold .wav files for game sound effects.
+
+In many of the mods below, additional files and folders are added to the ROM zips.  The tools and methods to add files to the ROM Zips are out scope of this document, but the processes can be easily accoplished using generally available software like WinZip, WinRar, and P7Zip. 
+
 ## Mods
 
 ### Config Saves
